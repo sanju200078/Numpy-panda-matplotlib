@@ -1,0 +1,19 @@
+import tensorflow as tf
+
+# Define variables
+w = tf.Variable(2.0)  # weight
+b = tf.Variable(1.0)  # bias
+
+# Input
+x = tf.constant([1.0, 2.0, 3.0])
+
+# Linear model: y = w*x + b
+y = w * x + b
+
+print("Input x:", x.numpy())
+print("Predicted y:", y.numpy())
+
+
+Output
+Input x: [1. 2. 3.]
+Predicted y: [3. 5. 7.]
