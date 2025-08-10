@@ -1,0 +1,40 @@
+# Step 1: Install the libraries (if not already installed)
+!pip install numpy pandas matplotlib
+
+# Step 2: Import the libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Step 3: Use NumPy - create an array and do math operations
+arr = np.array([10, 20, 30, 40, 50])
+print("Original Array:", arr)
+print("Array + 5:", arr + 5)
+print("Mean of array:", np.mean(arr))
+
+# Step 4: Use Pandas - create a DataFrame
+data = {
+    'Name': ['Alice', 'Bob', 'Charlie', 'David'],
+    'Score': [85, 92, 78, 90]
+}
+df = pd.DataFrame(data)
+print("\nPandas DataFrame:")
+print(df)
+
+# Step 5: Bar Chart
+plt.bar(df['Name'], df['Score'], color='skyblue')
+plt.title("Student Scores - Bar Chart")
+plt.xlabel("Name")
+plt.ylabel("Score")
+plt.show()
+
+# Step 6: Pie Chart
+plt.pie(
+    df['Score'],
+    labels=df['Name'],
+    autopct='%1.1f%%',
+    colors=['skyblue', 'lightgreen', 'orange', 'pink'],
+    startangle=90
+)
+plt.title("Student Scores - Pie Chart")
+plt.show()
