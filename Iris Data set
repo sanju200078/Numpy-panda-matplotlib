@@ -34,3 +34,38 @@ if len(numeric_cols) > 1:
     sns.heatmap(train_df[numeric_cols].corr(), annot=True, cmap='coolwarm')
     plt.title("Correlation Heatmap (Train Data)")
     plt.show()
+------------------------------------------
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Step 1: Load CSV (auto header detection)
+file_path = "/content/test.csv"  # change to train.csv or your path
+
+# Try reading with header
+df = pd.read_csv(file_path)
+
+# Step 2: If no meaningful column names, assign defaults
+if all(str(col).startswith("Unnamed") for col in df.columns):
+    # No header → read again and set names
+    df = pd.read_csv(file_path, header=None)
+    # Assign proper names (modify according to your dataset)
+    df.columns = ["SepalLength", "SepalWidth", "PetalLength", "PetalWidth", "Species"]
+
+# Step 3: Check the column names
+print("Column names:", df.columns.tolist())
+print(df.head())
+
+# Step 4: Scatter plot
+plt.figure(figsize=(8, 6))
+sns.scatterplot(
+    data=df,
+    x="SepalLength",
+    y="PetalLength",
+    hue="Species",
+    palette="Set2",
+    s=80,
+    edgecolor="black"
+)
+plt.title("Sepal Length vs Petal Length")
+plt.show()
