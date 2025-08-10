@@ -69,3 +69,15 @@ sns.scatterplot(
 )
 plt.title("Sepal Length vs Petal Length")
 plt.show()
+------------------------------------------
+figsize=(8,6) to give more breathing room.
+
+palette='Set2' for better color contrast.
+
+s=80 and edgecolor='black' to make points stand out.
+
+Added title, improved axis labels.
+
+Removed redundant legend text.
+
+tight_layout() to fix label overlaps.
