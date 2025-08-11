@@ -1,0 +1,159 @@
+# ========================
+# 1. Mount Google Drive
+# ========================
+from google.colab import drive
+drive.mount('/content/drive')
+
+# ========================
+# 2. Import libraries
+# ========================
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
+import numpy as np
+from tensorflow.keras.preprocessing import image
+
+# ========================
+# 3. Set dataset paths
+# Change these to match your folder paths
+# ========================
+train_dir = '/content/drive/MyDrive/catdogclassfy/train'
+test_dir = '/content/drive/MyDrive/catdogclassfy/Testing'
+
+# ========================
+# 4. Data generators
+# ========================
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True
+)
+
+test_datagen = ImageDataGenerator(rescale=1./255)
+
+train_set = train_datagen.flow_from_directory(
+    train_dir,
+    target_size=(224, 224),
+    batch_size=16,
+    class_mode='binary'
+)
+
+test_set = test_datagen.flow_from_directory(
+    test_dir,
+    target_size=(224, 224),
+    batch_size=16,
+    class_mode='binary'
+)
+
+# ========================
+# 5. Load pre-trained MobileNetV2
+# ========================
+base_model = MobileNetV2(input_shape=(224, 224, 3),
+                         include_top=False,
+                         weights='imagenet')
+base_model.trainable = False  # freeze layers
+
+# ========================
+# 6. Build model
+# ========================
+model = Sequential([
+    base_model,
+    GlobalAveragePooling2D(),
+    Dense(1, activation='sigmoid')
+])
+
+model.compile(optimizer='adam',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+
+# ========================
+# 7. Train model
+# ========================
+history = model.fit(
+    train_set,
+    validation_data=test_set,
+    epochs=10
+)
+
+# ========================
+# 8. Save model
+# ========================
+model.save('/content/drive/MyDrive/catdog_model6.keras')
+
+# ========================
+# 9. Predict a single image
+# ========================
+img_path = '/content/drive/MyDrive/catdogclassfy/Testing/dog/dog.5986.jpg'  # Change to your image
+
+img = image.load_img(img_path, target_size=(224, 224))
+x = image.img_to_array(img)
+x = np.expand_dims(x, axis=0)
+x = x / 255.0
+
+pred = model.predict(x)
+
+if pred[0][0] > 0.5:
+    print("The image is a Dog")
+else:
+    print("The image is a Cat")
+-------------------------------------------
+  output
+  Epoch 9/10
+8/8 ━━━━━━━━━━━━━━━━━━━━ 2s 288ms/step - accuracy: 0.9901 - loss: 0.0609 - val_accuracy: 0.9524 - val_loss: 0.1749
+Epoch 10/10
+8/8 ━━━━━━━━━━━━━━━━━━━━ 3s 399ms/step - accuracy: 1.0000 - loss: 0.0565 - val_accuracy: 0.9524 - val_loss: 0.1722
+WARNING:tensorflow:6 out of the last 6 calls to <function TensorFlowTrainer.make_predict_function.<locals>.one_step_on_data_distributed at 0x7ff9433689a0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+1/1 ━━━━━━━━━━━━━━━━━━━━ 3s 3s/step
+The image is a Dog
+-------------------------------------------------
+  Load the model and check resuld-
+  # ========================
+# 1. Mount Google Drive
+# ========================
+from google.colab import drive
+drive.mount('/content/drive')
+
+# ========================
+# 2. Import libraries
+# ========================
+import numpy as np
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
+
+# ========================
+# 3. Load your saved model
+# ========================
+model_path = '/content/drive/MyDrive/catdog_model6.keras'  # Change if needed
+model = load_model(model_path)
+
+# ========================
+# 4. Predict function
+# ========================
+def predict_asd(img_path):
+    # Load and preprocess image
+    img = image.load_img(img_path, target_size=(224, 224))
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)  # shape: (1, 224, 224, 3)
+    x = x / 255.0  # normalize
+
+    # Predict
+    pred = model.predict(x)[0][0]
+
+    # Interpret prediction
+    if pred > 0.5:
+        return "DOG"
+    else:
+        return "CAT"
+
+# ========================
+# 5. Test with an image
+# ========================
+
+  test_img_path = '/content/drive/MyDrive/catdogclassfy/Testing/cat/cat.199.jpg'  # Change path
+result = predict_asd(test_img_path)
+print(f"The image is classified as: {result}") output----Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
+1/1 ━━━━━━━━━━━━━━━━━━━━ 3s 3s/step
+The image is classified as: CAT
