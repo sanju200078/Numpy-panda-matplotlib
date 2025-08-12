@@ -1,0 +1,127 @@
+# ======================================
+# 1. Install & Import Libraries
+# ======================================
+import os
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+import shutil
+from google.colab import drive, files
+
+# ======================================
+# 2. Choose Model Loading Method
+# ======================================
+print("Select model loading method:")
+print("1. Load from Google Drive (fast after copy to local)")
+print("2. Upload from local computer")
+choice = input("Enter 1 or 2: ")
+
+if choice.strip() == "1":
+    # ---- Load from Google Drive (with local copy for speed) ----
+    drive.mount('/content/drive')
+    
+    # Google Drive path (change if needed)
+    drive_model_path = '/content/drive/MyDrive/brain-Tumor-detection/brain_tumor_model22-9-24V2.keras'
+    
+    # Local copy path
+    local_model_path = '/content/brain_tumor_model.keras'
+    
+    # Copy to local only if not already there
+    if not os.path.exists(local_model_path):
+        print("📂 Copying model from Drive to local storage...")
+        shutil.copy(drive_model_path, local_model_path)
+    
+    print("⚡ Loading model from local storage (fast)...")
+    model = tf.keras.models.load_model(local_model_path)
+    print(f"✅ Model loaded from: {local_model_path}")
+
+elif choice.strip() == "2":
+    # ---- Upload from Local Computer ----
+    uploaded = files.upload()
+    for filename in uploaded.keys():
+        local_model_path = filename
+    model = tf.keras.models.load_model(local_model_path)
+    print(f"✅ Model loaded from uploaded file: {local_model_path}")
+
+else:
+    raise ValueError("Invalid choice. Please enter 1 or 2.")
+
+# ======================================
+# 3. Prediction Function
+# ======================================
+def with_without_tumor(img_path):
+    img = cv2.imread(img_path)
+    if img is None:
+        print(f"❌ Error: Could not load image at '{img_path}'")
+        return None
+
+    # Resize and normalize
+    resize = tf.image.resize(img, (256, 256))
+    resize = tf.expand_dims(resize / 255.0, axis=0)
+
+    # Predict
+    predict = model.predict(resize)
+
+    # Show result
+    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    plt.axis('off')
+
+    if predict[0] > 0.5:
+        plt.title("🧠 The person has Brain Tumor")
+        plt.show()
+        return "The person has Brain Tumor"
+    else:
+        plt.title("✅ The Person Does not have Brain Tumor")
+        plt.show()
+        return "The Person Does not have Brain Tumor"
+
+# ======================================
+# 4. Predict All Images in a Folder
+# ======================================
+def predict_folder_images(folder_path):
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+            img_path = os.path.join(folder_path, filename)
+            print(f"\n📷 Processing {filename}...")
+            result = with_without_tumor(img_path)
+            print("Result:", result)
+
+# ======================================
+# 5. Test the Model
+# ======================================
+print("\nDo you want to test:")
+print("1. A single uploaded image")
+print("2. All images in a folder (Google Drive only)")
+test_choice = input("Enter 1 or 2: ")
+
+if test_choice.strip() == "1":
+    # Upload and test single image
+    uploaded = files.upload()
+    for img_name in uploaded.keys():
+        print(f"\n📷 Predicting {img_name}...")
+        result = with_without_tumor(img_name)
+        print("Result:", result)
+
+elif test_choice.strip() == "2":
+    # Test all images in Drive folder
+    folder_path = '/content/drive/MyDrive/brain-Tumor-detection/archive/Testing'
+    predict_folder_images(folder_path)
+
+else:
+    print("Invalid choice. Exiting.")
+---------------------------------------------
+Select model loading method:
+1. Load from Google Drive (fast after copy to local)
+2. Upload from local computer
+Enter 1 or 2: 1
+Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
+⚡ Loading model from local storage (fast)...
+✅ Model loaded from: /content/brain_tumor_model.keras
+
+Do you want to test:
+1. A single uploaded image
+2. All images in a folder (Google Drive only)
+Enter 1 or 2: 
+2
+
