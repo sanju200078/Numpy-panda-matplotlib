@@ -1,0 +1,153 @@
+# Brain tumor or not
+# ===========================
+# 1. Mount Google Drive
+# ===========================
+from google.colab import drive
+drive.mount('/content/drive')
+
+# ===========================
+# 2. Set dataset paths (CORRECTED)
+# ===========================
+train_dir = "/content/drive/MyDrive/brain-Tumor-detection/archive/train"
+test_dir  = "/content/drive/MyDrive/brain-Tumor-detection/archive/Testing"
+model_out = "/content/drive/MyDrive/brain-Tumor-detection/model/brain_tumor_cnn_best.keras"
+
+# ===========================
+# 3. Verify folders exist
+# ===========================
+import os
+
+if not os.path.exists(train_dir):
+    raise FileNotFoundError(f"Train folder not found: {train_dir}")
+
+if not os.path.exists(test_dir):
+    raise FileNotFoundError(f"Test folder not found: {test_dir}")
+
+print("✅ Dataset folders found:")
+print("Train path:", train_dir)
+print("Test path:", test_dir)
+
+# ===========================
+# 4. Load data with ImageDataGenerator
+# ===========================
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+datagen = ImageDataGenerator(rescale=1.0/255, validation_split=0.2)
+
+train_data = datagen.flow_from_directory(
+    train_dir,
+    target_size=(150, 150),
+    batch_size=32,
+    class_mode="categorical",
+    subset="training"
+)
+
+val_data = datagen.flow_from_directory(
+    train_dir,
+    target_size=(150, 150),
+    batch_size=32,
+    class_mode="categorical",
+    subset="validation"
+)
+
+# ===========================
+# 5. Build CNN model
+# ===========================
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+
+model = Sequential([
+    Conv2D(32, (3,3), activation='relu', input_shape=(150,150,3)),
+    MaxPooling2D(2,2),
+
+    Conv2D(64, (3,3), activation='relu'),
+    MaxPooling2D(2,2),
+
+    Conv2D(128, (3,3), activation='relu'),
+    MaxPooling2D(2,2),
+
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dropout(0.5),
+    Dense(train_data.num_classes, activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.summary()
+
+# ===========================
+# 6. Train the model
+# ===========================
+history = model.fit(
+    train_data,
+    validation_data=val_data,
+    epochs=10
+)
+
+# ===========================
+# 7. Save trained model to Google Drive
+# ===========================
+os.makedirs(os.path.dirname(model_out), exist_ok=True)
+model.save(model_out)
+print(f"✅ Model saved to: {model_out}")
+
+# ===========================
+# 8. Optional: Evaluate on test set
+# ===========================
+test_datagen = ImageDataGenerator(rescale=1.0/255)
+test_data = test_datagen.flow_from_directory(
+    test_dir,
+    target_size=(150,150),
+    batch_size=32,
+    class_mode="categorical"
+)
+
+loss, acc = model.evaluate(test_data)
+print(f"Test Accuracy: {acc:.2f}")
+--------------------------------------------
+output
+--------------------------------------
+Train path: /content/drive/MyDrive/brain-Tumor-detection/archive/train
+Test path: /content/drive/MyDrive/brain-Tumor-detection/archive/Testing
+Found 203 images belonging to 2 classes.
+Found 50 images belonging to 2 classes.
+/usr/local/lib/python3.11/dist-packages/keras/src/layers/convolutional/base_conv.py:113: UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the model instead.
+  super().__init__(activity_regularizer=activity_regularizer, **kwargs)
+Model: "sequential"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Layer (type)                    ┃ Output Shape           ┃       Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ conv2d (Conv2D)                 │ (None, 148, 148, 32)   │           896 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ max_pooling2d (MaxPooling2D)    │ (None, 74, 74, 32)     │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_1 (Conv2D)               │ (None, 72, 72, 64)     │        18,496 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ max_pooling2d_1 (MaxPooling2D)  │ (None, 36, 36, 64)     │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_2 (Conv2D)               │ (None, 34, 34, 128)    │        73,856 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ max_pooling2d_2 (MaxPooling2D)  │ (None, 17, 17, 128)    │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ flatten (Flatten)               │ (None, 36992)          │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dense (Dense)                   │ (None, 128)            │     4,735,104 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dropout (Dropout)               │ (None, 128)            │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dense_1 (Dense)                 │ (None, 2)              │           258 │
+└─────────────────────────────────┴────────────────────────┴───────────────┘
+ Total params: 4,828,610 (18.42 MB)
+ Trainable params: 4,828,610 (18.42 MB)
+ Non-trainable params: 0 (0.00 B)
+/usr/local/lib/python3.11/dist-packages/keras/src/trainers/data_adapters/py_dataset_adapter.py:121: UserWarning: Your `PyDataset` class should call `super().__init__(**kwargs)` in its constructor. `**kwargs` can include `workers`, `use_multiprocessing`, `max_queue_size`. Do not pass these arguments to `fit()`, as they will be ignored.
+  self._warn_if_super_not_called()
+Epoch 1/10
+7/7 ━━━━━━━━━━━━━━━━━━━━ 435s 68s/step - accuracy: 0.5817 - loss: 1.7387 - val_accuracy: 0.7400 - val_loss: 0.5511
+Epoch 2/10
+7/7 ━━━━━━━━━━━━━━━━━━━━ 424s 59s/step - accuracy: 0.6929 - loss: 0.5777 - val_accuracy: 0.7400 - val_loss: 0.5345
+Epoch 3/10
+7/7 ━━━━━━━━━━━━━━━━━━━━ 419s 59s/step - accuracy: 0.7937 - loss: 0.5181 - val_accuracy: 0.7400 - val_loss: 0.5576
+Epoch 4/10
+7/7 ━━━━━━━━━━━━━━━━━━━━ 420s 59s/step - accuracy: 0.7978 - loss: 0.4547 - val_accuracy: 0.7400 - val_loss: 0.5441
+Epoch 5/10
