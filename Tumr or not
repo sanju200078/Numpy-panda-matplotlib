@@ -151,3 +151,184 @@ Epoch 3/10
 Epoch 4/10
 7/7 ━━━━━━━━━━━━━━━━━━━━ 420s 59s/step - accuracy: 0.7978 - loss: 0.4547 - val_accuracy: 0.7400 - val_loss: 0.5441
 Epoch 5/10
+---model saved-some error commig-so load that model-
+----------------------------------------------------------------------------------------------------------
+# ===========================
+# 1. Load the saved model
+# ===========================
+from tensorflow.keras.models import load_model
+import numpy as np
+import os
+from tensorflow.keras.preprocessing import image
+
+model_path = "/content/brain_tumor_cnn_best.keras"
+model = load_model(model_path)
+print("✅ Model loaded successfully")
+
+# ===========================
+# 2. Set class labels (must match training)
+# ===========================
+class_labels = ['No Tumor', 'Tumor']  # Change if your folder names are different
+
+# ===========================
+# 3. Loop through Testing1 folder and predict
+# ===========================
+test_folder = "/content/drive/MyDrive/brain-Tumor-detection/archive/Testing"
+
+for img_name in os.listdir(test_folder):
+    img_path = os.path.join(test_folder, img_name)
+
+    # Skip non-image files
+    if not img_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+        continue
+
+    # Load and preprocess image
+    img = image.load_img(img_path, target_size=(150, 150))
+    img_array = image.img_to_array(img) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+
+    # Predict
+    prediction = model.predict(img_array)
+    predicted_class = class_labels[np.argmax(prediction)]
+
+    print(f"{img_name} --> {predicted_class}")
+
+output-
+-----------------------------------------------------------------------
+Model loaded successfully
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 156ms/step
+augmented_144_1.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 71ms/step
+augmented_144_2.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 72ms/step
+augmented_144_3.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 70ms/step
+augmented_145_2.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 86ms/step
+augmented_145_3.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 69ms/step
+augmented_145_4.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 70ms/step
+augmented_146_3.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 72ms/step
+augmented_146_5.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 77ms/step
+augmented_146_4.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step
+augmented_147_4.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 137ms/step
+augmented_147_6.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 114ms/step
+augmented_147_5.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 111ms/step
+augmented_148_5.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 105ms/step
+augmented_148_6.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step
+augmented_148_7.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step
+augmented_149_6.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 110ms/step
+augmented_149_7.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 114ms/step
+augmented_149_8.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step
+augmented_150_7.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 106ms/step
+augmented_150_8.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 142ms/step
+augmented_150_9.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step
+augmented_151_8.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 122ms/step
+augmented_151_9.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 110ms/step
+augmented_151_10.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 105ms/step
+augmented_152_9.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 80ms/step
+augmented_152_10.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 70ms/step
+augmented_153_1.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 69ms/step
+augmented_153_10.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 70ms/step
+augmented_154_1.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 71ms/step
+augmented_154_2.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 69ms/step
+augmented_155_1.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 70ms/step
+augmented_155_2.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 71ms/step
+augmented_155_3.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 92ms/step
+augmented_1_1.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 81ms/step
+augmented_1_3.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 72ms/step
+augmented_1_2.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 76ms/step
+augmented_2_2.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 76ms/step
+augmented_2_3.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 69ms/step
+augmented_2_4.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 93ms/step
+augmented_3_3.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 70ms/step
+augmented_3_4.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 68ms/step
+augmented_3_5.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 73ms/step
+augmented_4_4.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 72ms/step
+augmented_4_5.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 73ms/step
+augmented_4_6.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 74ms/step
+augmented_5_5.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 77ms/step
+augmented_5_6.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 79ms/step
+augmented_5_7.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 72ms/step
+augmented_6_6.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 76ms/step
+augmented_6_7.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 73ms/step
+augmented_6_8.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 73ms/step
+augmented_7_7.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 71ms/step
+augmented_7_8.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 77ms/step
+augmented_7_9.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 69ms/step
+augmented_8_8.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 71ms/step
+augmented_8_9.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 72ms/step
+augmented_8_10.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 78ms/step
+augmented_9_9.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 75ms/step
+augmented_9_10.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 72ms/step
+augmented_10_1.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 71ms/step
+augmented_10_10.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 82ms/step
+augmented_11_1.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 73ms/step
+augmented_11_2.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 75ms/step
+augmented_12_1.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 71ms/step
+augmented_12_2.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 77ms/step
+augmented_12_3.jpg --> Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 75ms/step
+no 923.jpg --> No Tumor
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 69ms/step
+Y258.JPG --> Tumor
