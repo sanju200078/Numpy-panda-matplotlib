@@ -1,9 +1,9 @@
 from google.colab import files
-uploaded = files.upload()  # This will open a file chooser in Colab
+uploaded = files.upload()
 
-# Then load the file
 import pandas as pd
-df = pd.read_csv("Salaries.csv")
+filename = list(uploaded.keys())[0]  # get uploaded file name
+df = pd.read_csv(filename)
 print(df.head())
 ------------------------------------------------
 # 1. Import required libraries
