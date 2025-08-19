@@ -151,9 +151,13 @@ def predict_asd(img_path):
 # ========================
 # 5. Test with an image
 # ========================
-
-  test_img_path = '/content/drive/MyDrive/catdogclassfy/Testing/cat/cat.199.jpg'  # Change path
+test_img_path = '/content/drive/MyDrive/catdogclassfy/Testing/cat/cat.199.jpg'  # Change path
 result = predict_asd(test_img_path)
-print(f"The image is classified as: {result}") output----Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
+print(f"The image is classified as: {result}") 
+
+
+-------------------------------------------------------------------
+
+output----Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
 1/1 ━━━━━━━━━━━━━━━━━━━━ 3s 3s/step
 The image is classified as: CAT
