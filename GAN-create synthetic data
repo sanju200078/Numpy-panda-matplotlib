@@ -1,0 +1,209 @@
+# ========================
+# 1. Setup
+# ========================
+import os, shutil
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+import numpy as np
+from tensorflow.keras.preprocessing.image import array_to_img
+
+# Google Drive path (update if needed)
+SRC_DIR = "/content/drive/MyDrive/catdogclassfy"
+LOCAL_DIR = "/content/catdogclassfy"
+
+# copy dataset locally (faster + stable)
+if os.path.exists(LOCAL_DIR):
+    shutil.rmtree(LOCAL_DIR)
+shutil.copytree(SRC_DIR, LOCAL_DIR)
+
+print("Dataset copied to:", LOCAL_DIR)
+!ls $LOCAL_DIR
+
+
+# ========================
+# 2. Load Dataset
+# ========================
+img_size = (64, 64)
+batch_size = 32
+
+train_dir = os.path.join(LOCAL_DIR, "train")
+val_dir   = os.path.join(LOCAL_DIR, "Testing")
+
+train_ds = tf.keras.utils.image_dataset_from_directory(
+    train_dir,
+    labels="inferred",
+    label_mode="binary",
+    image_size=img_size,
+    batch_size=batch_size,
+    shuffle=True
+).unbatch().batch(batch_size, drop_remainder=True)
+
+val_ds = tf.keras.utils.image_dataset_from_directory(
+    val_dir,
+    labels="inferred",
+    label_mode="binary",
+    image_size=img_size,
+    batch_size=batch_size,
+    shuffle=True
+).unbatch().batch(batch_size, drop_remainder=True)
+
+# normalize
+def normalize_img(image, label):
+    return tf.cast(image, tf.float32)/255.0, label
+
+train_ds = train_ds.map(normalize_img).prefetch(buffer_size=tf.data.AUTOTUNE)
+val_ds   = val_ds.map(normalize_img).prefetch(buffer_size=tf.data.AUTOTUNE)
+
+
+# ========================
+# 3. Build GAN
+# ========================
+latent_dim = 100
+
+# Generator
+def build_generator():
+    model = models.Sequential([
+        layers.Dense(8*8*256, input_dim=latent_dim),
+        layers.Reshape((8, 8, 256)),
+        layers.Conv2DTranspose(128, 4, strides=2, padding="same", activation="relu"),
+        layers.Conv2DTranspose(64, 4, strides=2, padding="same", activation="relu"),
+        layers.Conv2DTranspose(3, 4, strides=2, padding="same", activation="tanh")
+    ])
+    return model
+
+# Discriminator
+def build_discriminator():
+    model = models.Sequential([
+        layers.Conv2D(64, 4, strides=2, padding="same", input_shape=(64,64,3)),
+        layers.LeakyReLU(0.2),
+        layers.Conv2D(128, 4, strides=2, padding="same"),
+        layers.LeakyReLU(0.2),
+        layers.Flatten(),
+        layers.Dense(1, activation="sigmoid")
+    ])
+    return model
+
+generator = build_generator()
+discriminator = build_discriminator()
+discriminator.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+
+# GAN (Generator + Discriminator)
+discriminator.trainable = False
+z = layers.Input(shape=(latent_dim,))
+img = generator(z)
+validity = discriminator(img)
+gan = models.Model(z, validity)
+gan.compile(optimizer="adam", loss="binary_crossentropy")
+
+
+# ========================
+# 4. Train GAN
+# ========================
+def show_generated_images(epoch):
+    noise = np.random.normal(0, 1, (16, latent_dim))
+    gen_imgs = generator.predict(noise, verbose=0)
+    gen_imgs = 0.5 * gen_imgs + 0.5
+    plt.figure(figsize=(4,4))
+    for i in range(16):
+        plt.subplot(4,4,i+1)
+        plt.imshow(gen_imgs[i])
+        plt.axis("off")
+    plt.suptitle(f"Epoch {epoch}")
+    plt.show()
+
+def train_gan(epochs=1000, save_interval=200):
+    real_images = []
+    for images, _ in train_ds.take(1):
+        real_images = images.numpy()
+    real_images = (real_images * 2) - 1   # scale [-1,1]
+
+    for epoch in range(epochs):
+        # train discriminator
+        idx = np.random.randint(0, real_images.shape[0], batch_size)
+        real = real_images[idx]
+
+        noise = np.random.normal(0, 1, (batch_size, latent_dim))
+        fake = generator.predict(noise, verbose=0)
+
+        d_loss_real = discriminator.train_on_batch(real, np.ones((batch_size, 1)))
+        d_loss_fake = discriminator.train_on_batch(fake, np.zeros((batch_size, 1)))
+
+        # train generator
+        noise = np.random.normal(0, 1, (batch_size, latent_dim))
+        g_loss = gan.train_on_batch(noise, np.ones((batch_size, 1)))
+
+        if epoch % save_interval == 0:
+            print(f"Epoch {epoch} | D Loss: {0.5*np.add(d_loss_real, d_loss_fake)} | G Loss: {g_loss}")
+            show_generated_images(epoch)
+
+# Train GAN (adjust epochs if needed)
+train_gan(epochs=500, save_interval=100)
+
+
+# ========================
+# 5. Save Synthetic Images
+# ========================
+SAVE_DIR = "/content/catdog_synthetic"
+os.makedirs(SAVE_DIR, exist_ok=True)
+
+def save_synthetic_images(num_images=100):
+    noise = np.random.normal(0, 1, (num_images, latent_dim))
+    gen_imgs = generator.predict(noise, verbose=0)
+    gen_imgs = 0.5 * gen_imgs + 0.5  # rescale [0,1]
+
+    for i, img in enumerate(gen_imgs):
+        img = array_to_img(img)   # tensor → PIL
+        img.save(os.path.join(SAVE_DIR, f"synthetic_{i+1}.png"))
+
+    print(f"✅ {num_images} synthetic images saved in: {SAVE_DIR}")
+
+# Save 100 images
+save_synthetic_images(100)
+
+
+# ========================
+# 6. CNN Classifier
+# ========================
+cnn = models.Sequential([
+    layers.Conv2D(32, (3,3), activation="relu", input_shape=(64,64,3)),
+    layers.MaxPooling2D(2,2),
+    layers.Conv2D(64, (3,3), activation="relu"),
+    layers.MaxPooling2D(2,2),
+    layers.Flatten(),
+    layers.Dense(128, activation="relu"),
+    layers.Dense(1, activation="sigmoid")
+])
+
+cnn.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+history = cnn.fit(train_ds, validation_data=val_ds, epochs=5)
+
+
+# ========================
+# 7. Prediction Example
+# ========================
+from tensorflow.keras.utils import load_img, img_to_array
+
+img_path = os.path.join(val_dir, "cat", os.listdir(os.path.join(val_dir,"cat"))[0])
+img = load_img(img_path, target_size=img_size)
+x = img_to_array(img)/255.0
+x = np.expand_dims(x, axis=0)
+
+pred = cnn.predict(x)[0][0]
+print("The image is a Dog 🐶" if pred>0.5 else "The image is a Cat 🐱")
+
+-----------------------------------------------------
+Output
+✅ 100 synthetic images saved in: /content/catdog_synthetic
+Epoch 1/5
+3/3 ━━━━━━━━━━━━━━━━━━━━ 3s 412ms/step - accuracy: 0.4902 - loss: 0.6947 - val_accuracy: 0.4000 - val_loss: 0.5610
+Epoch 2/5
+3/3 ━━━━━━━━━━━━━━━━━━━━ 1s 438ms/step - accuracy: 0.6113 - loss: 0.6014 - val_accuracy: 0.3938 - val_loss: 0.5927
+Epoch 3/5
+3/3 ━━━━━━━━━━━━━━━━━━━━ 1s 432ms/step - accuracy: 0.6387 - loss: 0.5567 - val_accuracy: 0.4062 - val_loss: 0.6204
+Epoch 4/5
+3/3 ━━━━━━━━━━━━━━━━━━━━ 1s 463ms/step - accuracy: 0.5632 - loss: 0.5953 - val_accuracy: 0.4437 - val_loss: 0.5394
+Epoch 5/5
+3/3 ━━━━━━━━━━━━━━━━━━━━ 1s 449ms/step - accuracy: 0.7064 - loss: 0.5188 - val_accuracy: 0.4125 - val_loss: 0.5700
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 100ms/step
+The image is a Dog 🐶
