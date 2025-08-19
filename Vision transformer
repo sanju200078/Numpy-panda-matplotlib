@@ -1,0 +1,193 @@
+#  Vision transformers
+# ========================
+# 1. Mount Google Drive
+# ========================
+from google.colab import drive
+drive.mount('/content/d ive')
+
+import os, shutil
+
+# ========================
+# 2. Copy dataset locally (avoid Drive disconnect issues)
+# ========================
+local_data_dir = "/content/catdogclassfy"
+if os.path.exists(local_data_dir):
+    shutil.rmtree(local_data_dir)   # clean old copy
+
+shutil.copytree("/content/drive/MyDrive/catdogclassfy", local_data_dir)
+
+train_dir = os.path.join(local_data_dir, "train")
+test_dir  = os.path.join(local_data_dir, "Testing")
+
+# ========================
+# 3. Imports
+# ========================
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import numpy as np
+
+# ========================
+# 4. Data generators
+# ========================
+datagen = keras.preprocessing.image.ImageDataGenerator(
+    rescale=1./255,
+    validation_split=0.2
+)
+
+train_set = datagen.flow_from_directory(
+    train_dir,
+    target_size=(224, 224),
+    batch_size=16,
+    class_mode='binary',
+    subset="training"
+)
+
+val_set = datagen.flow_from_directory(
+    train_dir,
+    target_size=(224, 224),
+    batch_size=16,
+    class_mode='binary',
+    subset="validation"
+)
+
+# ========================
+# 5. Vision Transformer Utilities
+# ========================
+class Patches(layers.Layer):
+    def __init__(self, patch_size):
+        super(Patches, self).__init__()
+        self.patch_size = patch_size
+
+    def call(self, images):
+        batch_size = tf.shape(images)[0]
+        patches = tf.image.extract_patches(
+            images=images,
+            sizes=[1, self.patch_size, self.patch_size, 1],
+            strides=[1, self.patch_size, self.patch_size, 1],
+            rates=[1, 1, 1, 1],
+            padding="VALID",
+        )
+        patch_dims = patches.shape[-1]
+        patches = tf.reshape(patches, [batch_size, -1, patch_dims])
+        return patches
+
+
+class PatchEncoder(layers.Layer):
+    def __init__(self, num_patches, projection_dim):
+        super(PatchEncoder, self).__init__()
+        self.projection = layers.Dense(units=projection_dim)
+        self.position_embedding = layers.Embedding(
+            input_dim=num_patches, output_dim=projection_dim
+        )
+
+    def call(self, patches):
+        positions = tf.range(start=0, limit=tf.shape(patches)[1], delta=1)
+        encoded = self.projection(patches) + self.position_embedding(positions)
+        return encoded
+
+
+# ========================
+# 6. Vision Transformer Model
+# ========================
+def create_vit_classifier(
+    input_shape=(224, 224, 3),
+    patch_size=16,
+    projection_dim=64,
+    transformer_layers=8,
+    num_heads=4,
+    mlp_dim=128,
+    num_classes=1
+):
+    inputs = keras.Input(shape=input_shape)
+
+    # 1. Create patches
+    patches = Patches(patch_size)(inputs)
+
+    # 2. Encode patches
+    num_patches = (input_shape[0] // patch_size) ** 2
+    encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)
+
+    # 3. Transformer blocks
+    for _ in range(transformer_layers):
+        # LN + MHA
+        x1 = layers.LayerNormalization()(encoded_patches)
+        attention_output = layers.MultiHeadAttention(
+            num_heads=num_heads, key_dim=projection_dim
+        )(x1, x1)
+        x2 = layers.Add()([attention_output, encoded_patches])
+
+        # LN + MLP
+        x3 = layers.LayerNormalization()(x2)
+        x3 = layers.Dense(mlp_dim, activation="gelu")(x3)
+        x3 = layers.Dense(projection_dim)(x3)
+        encoded_patches = layers.Add()([x3, x2])
+
+    # 4. Classification Head
+    representation = layers.LayerNormalization()(encoded_patches)
+    representation = layers.GlobalAveragePooling1D()(representation)
+    outputs = layers.Dense(num_classes, activation="sigmoid")(representation)
+
+    return keras.Model(inputs=inputs, outputs=outputs, name="VisionTransformer")
+
+
+# ========================
+# 7. Build and Compile Model
+# ========================
+vit_classifier = create_vit_classifier()
+
+vit_classifier.compile(
+    optimizer=keras.optimizers.Adam(1e-4),
+    loss="binary_crossentropy",
+    metrics=["accuracy"]
+)
+
+# ========================
+# 8. Train Model
+# ========================
+history = vit_classifier.fit(
+    train_set,
+    validation_data=val_set,
+    epochs=5
+)
+
+# ========================
+# 9. Save Model
+# ========================
+vit_classifier.save("/content/drive/MyDrive/catdog_vit.keras")
+
+# ========================
+# 10. Predict Single Image
+# ========================
+from tensorflow.keras.preprocessing import image
+
+img_path = os.path.join(test_dir, "dog/dog.5986.jpg")  # example image
+img = image.load_img(img_path, target_size=(224, 224))
+x = image.img_to_array(img)
+x = np.expand_dims(x, axis=0) / 255.0
+
+pred = vit_classifier.predict(x)
+
+if pred[0][0] > 0.5:
+    print("The image is a Dog 🐶")
+else:
+    print("The image is a Cat 🐱")
+
+
+----------------------------------------------------------
+Output
+Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
+Found 100 images belonging to 2 classes.
+Found 24 images belonging to 2 classes.
+Epoch 1/5
+7/7 ━━━━━━━━━━━━━━━━━━━━ 40s 2s/step - accuracy: 0.5823 - loss: 0.6794 - val_accuracy: 0.6250 - val_loss: 0.6924
+Epoch 2/5
+7/7 ━━━━━━━━━━━━━━━━━━━━ 8s 1s/step - accuracy: 0.6357 - loss: 0.6673 - val_accuracy: 0.6250 - val_loss: 0.6869
+Epoch 3/5
+7/7 ━━━━━━━━━━━━━━━━━━━━ 10s 1s/step - accuracy: 0.7027 - loss: 0.6501 - val_accuracy: 0.6250 - val_loss: 0.6875
+Epoch 4/5
+7/7 ━━━━━━━━━━━━━━━━━━━━ 10s 1s/step - accuracy: 0.6315 - loss: 0.6573 - val_accuracy: 0.6250 - val_loss: 0.6899
+Epoch 5/5
+7/7 ━━━━━━━━━━━━━━━━━━━━ 9s 1s/step - accuracy: 0.6834 - loss: 0.6280 - val_accuracy: 0.6250 - val_loss: 0.6959
+1/1 ━━━━━━━━━━━━━━━━━━━━ 2s 2s/step
+The image is a Dog 🐶
