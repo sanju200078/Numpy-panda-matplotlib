@@ -130,3 +130,31 @@ Confusion matrix, without normalization
  [  2  36]]
 F1 Score (weighted): 0.9716312056737588
 Jaccard Score (pos_label=0): 0.9619047619047619
+---------------------------------------------------------
+!pip install catboost
+-------------------------------------------------------------
+output
+Columns after processing: ['A1_Score', 'A2_Score', 'A3_Score', 'A4_Score', 'A5_Score', 'A6_Score', 'A7_Score', 'A8_Score', 'A9_Score', 'A10_Score', 'age', 'jundice', 'austim', 'used_app_before', 'result', 'Class/ASD']
+Train set: (563, 13) (563, 1)
+Test set: (141, 13) (141, 1)
+0:	learn: 0.8774423	total: 56ms	remaining: 16.7s
+50:	learn: 1.0000000	total: 228ms	remaining: 1.11s
+100:	learn: 1.0000000	total: 348ms	remaining: 685ms
+150:	learn: 1.0000000	total: 470ms	remaining: 463ms
+200:	learn: 1.0000000	total: 652ms	remaining: 321ms
+250:	learn: 1.0000000	total: 781ms	remaining: 152ms
+299:	learn: 1.0000000	total: 855ms	remaining: 0us
+              precision    recall  f1-score   support
+
+           0       0.98      0.98      0.98       103
+           1       0.95      0.95      0.95        38
+
+    accuracy                           0.97       141
+   macro avg       0.96      0.96      0.96       141
+weighted avg       0.97      0.97      0.97       141
+
+Confusion matrix, without normalization
+[[101   2]
+ [  2  36]]
+F1 Score (weighted): 0.9716312056737588
+Jaccard Score (pos_label=0): 0.9619047619047619
