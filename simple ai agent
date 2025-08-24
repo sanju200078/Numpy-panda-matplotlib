@@ -1,0 +1,73 @@
+import random
+
+class Agent:
+    def __init__(self, name, condition, action):
+        self.name = name
+        self.condition = condition   # rule for when this agent acts
+        self.action = action         # what the agent does
+
+    def think_and_act(self, number):
+        """Agent checks if it should act on its own."""
+        if self.condition(number):
+            return {self.name: self.action(number)}
+        return None
+
+
+# Define agents with their "thinking rules"
+agent1 = Agent("Agent1",
+               lambda x: 0 <= x <= 100,
+               lambda x: f"Square={x**2}")
+
+agent2 = Agent("Agent2",
+               lambda x: 101 <= x <= 500,
+               lambda x: f"Half={x/2}")
+
+agent3 = Agent("Agent3",
+               lambda x: 501 <= x <= 1000,
+               lambda x: f"Double={x*2}")
+
+agents = [agent1, agent2, agent3]
+
+
+# Simulation with random numbers
+for _ in range(5):   # generate 5 random test cases
+    test_input = random.randint(0, 1000)  # random number between 0 and 1000
+    print(f"\nInput: {test_input}")
+
+    # every agent "thinks for itself"
+    results = [agent.think_and_act(test_input) for agent in agents]
+    results = [r for r in results if r is not None]  # filter only agents that acted
+
+    print("Result:", results[0] if results else "No agent acted")
+
+
+    --------------------------------------------------------
+    Output
+Input: 528
+Result: {'Agent3': 'Double=1056'}
+
+Input: 107
+Result: {'Agent2': 'Half=53.5'}
+
+Input: 682
+Result: {'Agent3': 'Double=1364'}
+
+Input: 868
+Result: {'Agent3': 'Double=1736'}
+
+Input: 19
+Result: {'Agent1': 'Square=361'}
+
+------#Each Agent has its own condition (rule) and action.
+
+#When a random number comes, all agents get the number.
+
+##Each agent decides for itself (if self.condition(number)) whether it should act.
+
+#The main loop doesn’t tell which agent must act — it just asks all agents to “think” and only the one(s) whose condition is true return a result.
+
+#That’s why we call it self-thinking:
+👉 #No external if 0–100 then Agent1 … elif 101–500 then Agent2 … etc.
+👉 #Instead, each agent independently evaluates whether the input fits its rule
+.#-----------------------------------------------------------
+
