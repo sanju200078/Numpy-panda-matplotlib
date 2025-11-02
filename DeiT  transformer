@@ -167,3 +167,74 @@ Epoch 2/3 - Loss: 0.6329 - Acc: 0.6371
 Epoch 3/3 - Loss: 0.5618 - Acc: 0.6613
 ✅ DeiT model saved to Google Drive!
 The image is a Dog 🐶
+------------------------------------------------
+Last part not working -new code for load the model and check one image
+# ============================================
+# 1. Import & Load Model from Google Drive
+# ============================================
+from transformers import DeiTForImageClassification, DeiTFeatureExtractor
+from PIL import Image
+import torch
+import matplotlib.pyplot as plt
+import os
+from google.colab import drive
+
+# Mount Google Drive
+drive.mount('/content/drive')
+
+# Path where your trained model is saved
+model_path = "/content/drive/MyDrive/catdog_deit1"
+
+# Load the model and feature extractor
+feature_extractor = DeiTFeatureExtractor.from_pretrained(model_path)
+model = DeiTForImageClassification.from_pretrained(model_path)
+
+# Use GPU if available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+model.eval()
+
+print("✅ Model loaded successfully!")
+
+# ============================================
+# 2. Choose Test Image
+# ============================================
+test_dir = "/content/drive/MyDrive/catdogclassfy/Testing"
+img_path = os.path.join(test_dir, "dog/dog.5986.jpg")  # Example image
+
+# ============================================
+# 3. Prediction Function
+# ============================================
+def predict_image(img_path):
+    img = Image.open(img_path).convert("RGB")
+
+    # Prepare image using the feature extractor (resizes, normalizes, etc.)
+    inputs = feature_extractor(images=img, return_tensors="pt").to(device)
+
+    with torch.no_grad():
+        outputs = model(**inputs)
+        logits = outputs.logits
+        pred = torch.argmax(logits, dim=-1).item()
+
+    # Class names as per your dataset
+    class_names = ["Cat", "Dog"]  # Change if opposite in your folder order
+
+    plt.imshow(img)
+    plt.axis("off")
+    plt.title(f"Prediction: {class_names[pred]}")
+    plt.show()
+
+    print("Logits:", logits)
+    print("Predicted Index:", pred)
+    print("Predicted Label:", class_names[pred])
+
+# ============================================
+# 4. Run Prediction
+# ============================================
+predict_image(img_path)
+------------------------------------
+output
+dog image comming
+ogits: tensor([[0.0378, 0.0990]])
+Predicted Index: 1
+Predicted Label: Dog
